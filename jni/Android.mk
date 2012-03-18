@@ -13,6 +13,6 @@ endif
 
 LOCAL_MODULE    := camerax
 LOCAL_SRC_FILES := jni_part.cpp
-LOCAL_LDLIBS +=  -llog -ldl
+LOCAL_LDLIBS +=  -llog -ldl -ljnigraphics
 
 include $(BUILD_SHARED_LIBRARY)

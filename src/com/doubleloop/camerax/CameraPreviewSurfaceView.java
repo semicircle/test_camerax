@@ -17,26 +17,31 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 public class CameraPreviewSurfaceView implements SurfaceHolder.Callback, Runnable {
-	private static final String TAG = "Sample::SurfaceView";
+	private static final String TAG = "CameraPreviewSurfaceView";
 
     private SurfaceHolder       mHolder;
+    private Bitmap mBitmap = null;
+    /* used when drawing the canvas */
+    private int mSurfLeftSpace = 0;
+    private int mSurfTopSpace = 0;
+    private int mMode = 0;
     private VideoCapture        mCamera;
     
-    private Mat mRgba;
-    private Mat mGray;
-    private Mat mIntermediateMat;
-    int mFrameWidth;
-    int mFrameHeight;
+    //private Mat mRgba;
+    //private Mat mGray;
+    //private Mat mIntermediateMat;
+    //int mFrameWidth;
+    //int mFrameHeight;
     
-    private long mGraySubmatNativeAddr;
-    private long mRgbaNativeAddr;
+    //private long mGraySubmatNativeAddr;
+    //private long mRgbaNativeAddr;
 
 	public CameraPreviewSurfaceView(SurfaceHolder holder) {
 		mHolder = holder;
         //mHolder.addCallback(this);
         Log.i(TAG, "Instantiated new " + this.getClass());
-        mFrameWidth = 0;
-        mFrameHeight = 0;
+        //mFrameWidth = 0;
+        //mFrameHeight = 0;
 	}
 
 	
@@ -45,38 +50,41 @@ public class CameraPreviewSurfaceView implements SurfaceHolder.Callback, Runnabl
 	public void surfaceChanged(SurfaceHolder _holder, int format, int width, int height) {
 		// TODO Auto-generated method stub
 		Log.i(TAG, "surfaceCreated");
-        synchronized (this) {
-            if (mCamera != null && mCamera.isOpened()) {
-                Log.i(TAG, "before mCamera.getSupportedPreviewSizes()");
-                List<Size> sizes = mCamera.getSupportedPreviewSizes();
-                Log.i(TAG, "after mCamera.getSupportedPreviewSizes()");
-                mFrameWidth = width;
-                mFrameHeight = height;
+		int fixWidth = 0;
+		int fixHeight = 0;
+		int ret;
 
-                // selecting optimal camera preview size
-                {
-                    double minDiff = Double.MAX_VALUE;
-                    for (Size size : sizes) {
-                        if (Math.abs(size.height - height) < minDiff) {
-                            mFrameWidth = (int) size.width;
-                            mFrameHeight = (int) size.height;
-                            minDiff = Math.abs(size.height - height);
-                        }
+        if (mCamera != null && mCamera.isOpened()) {
+            Log.i(TAG, "before mCamera.getSupportedPreviewSizes()");
+            List<Size> sizes = mCamera.getSupportedPreviewSizes();
+            Log.i(TAG, "after mCamera.getSupportedPreviewSizes()");
+            fixWidth = width;
+            fixHeight = height;
+            // selecting optimal camera preview size
+            {
+                double minDiff = Double.MAX_VALUE;
+                for (Size size : sizes) {
+                    if (Math.abs(size.height - height) < minDiff) {
+                    	fixWidth = (int) size.width;
+                    	fixHeight = (int) size.height;
+                        minDiff = Math.abs(size.height - height);
                     }
                 }
-
-                mCamera.set(Highgui.CV_CAP_PROP_FRAME_WIDTH, mFrameWidth);
-                mCamera.set(Highgui.CV_CAP_PROP_FRAME_HEIGHT, mFrameHeight);
             }
+
+            mCamera.set(Highgui.CV_CAP_PROP_FRAME_WIDTH, fixWidth);
+            mCamera.set(Highgui.CV_CAP_PROP_FRAME_HEIGHT, fixHeight);
+            
+            mCamera.release();
+            mCamera = null;
+            
+            ret = NativeInit(mCamera, fixWidth, fixHeight);
+    		
+    		mSurfLeftSpace = (width - fixWidth) / 2;
+    		mSurfTopSpace = (height - fixHeight) / 2;
+    		mBitmap = Bitmap.createBitmap(fixWidth, fixHeight, Bitmap.Config.ARGB_8888);
+    			
         }
-        
-        synchronized (this) {
-            // initialize Mats before usage
-            mGray = new Mat();
-            mRgba = new Mat();
-            mIntermediateMat = new Mat();
-        }
-        
 	}
 
 	@Override
@@ -95,83 +103,101 @@ public class CameraPreviewSurfaceView implements SurfaceHolder.Callback, Runnabl
 	@Override
 	public void surfaceDestroyed(SurfaceHolder arg0) {
 		Log.i(TAG, "surfaceDestroyed");
-        if (mCamera != null) {
-            synchronized (this) {
-                mCamera.release();
-                mCamera = null;
-            }
-        }
+//        if (mCamera != null) {
+//            synchronized (this) {
+//                mCamera.release();
+//                mCamera = null;
+//            }
+//        }
+		NativeDestory();
 	}
 	
 	@Override
 	public void run() {
 		Log.i(TAG, "Starting processing thread");
 		
-		Bitmap bmp = null;
+		
 		
         while (true) {
-            //Bitmap bmp = null;
-        	if ((bmp == null) && (0 != mFrameHeight)) {
-        		bmp = Bitmap.createBitmap(mFrameWidth, mFrameHeight, Bitmap.Config.ARGB_8888);
-        	}
+            
+//        	if ((bmp == null) && (0 != mFrameHeight)) {
+        		//bmp = Bitmap.createBitmap(mFrameWidth, mFrameHeight, Bitmap.Config.ARGB_8888);
+//        	}
 
-            synchronized (this) {
-                if (mCamera == null)
-                    break;
-
-                if (!mCamera.grab()) {
-                    Log.e(TAG, "mCamera.grab() failed");
-                    break;
-                }
-
-                bmp = processFrame(mCamera, bmp);
-            }
-
-            if (bmp != null) {
+//            synchronized (this) {
+//                if (mCamera == null)
+//                    break;
+//
+//                if (!mCamera.grab()) {
+//                    Log.e(TAG, "mCamera.grab() failed");
+//                    break;
+//                }
+//
+//                bmp = processFrame(mCamera, bmp);
+//            }
+        	if (mBitmap != null) {
+	        	NativeProcessFrame(mBitmap, mMode);
+	
+	            
                 Canvas canvas = mHolder.lockCanvas();
                 if (canvas != null) {
-                    canvas.drawBitmap(bmp, (canvas.getWidth() - bmp.getWidth()) / 2, (canvas.getHeight() - bmp.getHeight()) / 2, null);
+                    canvas.drawBitmap(mBitmap, mSurfTopSpace, mSurfLeftSpace, null);
                     mHolder.unlockCanvasAndPost(canvas);
                 }
-                //bmp.recycle();
-            }
+                
+	            
+        	}
         }
         
-        synchronized (this) {
-            // Explicitly deallocate Mats
-            if (mRgba != null)
-                mRgba.release();
-            if (mGray != null)
-                mGray.release();
-            if (mIntermediateMat != null)
-                mIntermediateMat.release();
+//        synchronized (this) {
+//            // Explicitly deallocate Mats
+//            if (mRgba != null)
+//                mRgba.release();
+//            if (mGray != null)
+//                mGray.release();
+//            if (mIntermediateMat != null)
+//                mIntermediateMat.release();
+//
+//            mRgba = null;
+//            mGray = null;
+//            mIntermediateMat = null;
+//        }
 
-            mRgba = null;
-            mGray = null;
-            mIntermediateMat = null;
-        }
-
-        Log.i(TAG, "Finishing processing thread");
+//        Log.i(TAG, "Finishing processing thread");
 		
 	}
 	
-	protected Bitmap processFrame(VideoCapture capture, Bitmap bmp) {
-		
-		capture.retrieve(mGray, Highgui.CV_CAP_ANDROID_GREY_FRAME);
-		//Threshold(mGray.getNativeObjAddr());
-		Imgproc.cvtColor(mGray, mRgba, Imgproc.COLOR_GRAY2RGBA, 4);
-        FindFeatures(mGray.getNativeObjAddr(), mRgba.getNativeObjAddr());
-
-        if (Utils.matToBitmap(mRgba, bmp))
-            return bmp;
-
-        //bmp.recycle();
-        return null;
-	}
+//	protected Bitmap processFrame(VideoCapture capture, Bitmap bmp) {
+//		
+//		/*
+//		capture.retrieve(mGray, Highgui.CV_CAP_ANDROID_GREY_FRAME);
+//		
+//		Imgproc.cvtColor(mGray, mRgba, Imgproc.COLOR_GRAY2RGBA, 4);
+//        FindFeatures(mGray.getNativeObjAddr(), mRgba.getNativeObjAddr());
+//
+//        if (Utils.matToBitmap(mRgba, bmp))
+//            return bmp;
+//		*/
+//        //bmp.recycle();
+//        return null;
+//	}
 	
-	public native void FindFeatures(long matAddrGr, long matAddrRgba);
+//	public native void FindFeatures(long matAddrGr, long matAddrRgba);
 	
-	public native void Threshold(long matAddrGr);
+	//public native void Threshold(long matAddrGr);
+	
+	/* design:
+	 * initialize: 
+	 * NativeInit for native code to initial Mats , camera and calculate the most fit size.
+	 * NativeInit_GetBmpInfo, for native to get bitmap info for one time, instead of doing this every frame.
+	 * NativeProcessFrame process
+	 * process:
+	 * NativeProcessFrame, do frame capture, and returns bitmap 
+	 * */
+	
+	public native int NativeInit(VideoCapture camera, int width, int height);
+	public native void NativeProcessFrame(Bitmap bmp, int mode);
+	public native void NativeDestory();
 	
 	static {
         System.loadLibrary("camerax");
