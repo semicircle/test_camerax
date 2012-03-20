@@ -90,6 +90,9 @@ JNIEXPORT void JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_Nati
 		//cvtColor(*state.pMatGrey2, *state.pMatRGBA, CV_GRAY2RGBA, 4);
 		//cvtColor(*state.pMatGrey, *state.pMatRGBA, CV_GRAY2RGBA, 4);
 		//LOGI("ProcessFrame 3");
+		blur(*state.pMatGrey, *state.pMatGrey2, Size(3,3));
+		Canny(*state.pMatGrey, *state.pMatGrey, 80, 100, 3);
+
 
 		//TODO: seems pMatRGBA can be deleted.
 

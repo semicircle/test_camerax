@@ -45,6 +45,26 @@
 				android:gravity="left|center_vertical"
 				android:paddingLeft="15dp"
 				android:paddingBottom="10dp"/>
+			
+			<Button
+				android:id="@+id/button3"
+				android:layout_width="80dp"
+				android:layout_height="60dp"
+				android:textSize="16sp"
+				android:textColor="#FFFFFFFF" 
+				android:gravity="left|center_vertical"
+				android:paddingLeft="15dp"
+				android:paddingBottom="10dp"/>
+
+			<Button
+				android:id="@+id/button4"
+				android:layout_width="80dp"
+				android:layout_height="60dp"
+				android:textSize="16sp"
+				android:textColor="#FFFFFFFF"
+				android:gravity="left|center_vertical"
+				android:paddingLeft="15dp"
+				android:paddingBottom="10dp"/>
 		</LinearLayout>
 
 	</LinearLayout>
