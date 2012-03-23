@@ -38,6 +38,10 @@ typedef struct {
 	cv::VideoCapture* pCapture;
 	cv::Mat* pMatGrey;
 	cv::Mat* pMatGrey2;
+	cv::Mat* pMatGrey3;
+	cv::Mat* pMatGrey4;
+	cv::Mat* pMatGrey5;
+	cv::Mat* pMatGrey6;
 	cv::Mat* pMatRGBA;
 	int width;
 	int height;
@@ -64,6 +68,11 @@ JNIEXPORT jint JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_Nati
 	state.pMatGrey = (cv::Mat*)new Mat();
 	state.pMatRGBA = (cv::Mat*)new Mat();
 	state.pMatGrey2 = (cv::Mat*)new Mat();
+	state.pMatGrey3 = (cv::Mat*)new Mat();
+	state.pMatGrey4 = (cv::Mat*)new Mat();
+	state.pMatGrey5 = (cv::Mat*)new Mat();
+	state.pMatGrey6 = (cv::Mat*)new Mat();
+
 
 	state.width = width;
 	state.height = height;
@@ -90,9 +99,23 @@ JNIEXPORT void JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_Nati
 		//cvtColor(*state.pMatGrey2, *state.pMatRGBA, CV_GRAY2RGBA, 4);
 		//cvtColor(*state.pMatGrey, *state.pMatRGBA, CV_GRAY2RGBA, 4);
 		//LOGI("ProcessFrame 3");
-		blur(*state.pMatGrey, *state.pMatGrey2, Size(3,3));
+		//blur(*state.pMatGrey, *state.pMatGrey2, Size(3,3));
+#if 0
 		Canny(*state.pMatGrey, *state.pMatGrey, 80, 100, 3);
+#endif
+		//GaussianBlur( *state.pMatGrey, *state.pMatGrey, Size(3,3), 0, 0, BORDER_DEFAULT );
+		Sobel( *state.pMatGrey, *state.pMatGrey2, CV_16S, 1, 0, 3, 1, 0, BORDER_DEFAULT );
+		convertScaleAbs( *state.pMatGrey2, *state.pMatGrey4 );
+		Sobel( *state.pMatGrey, *state.pMatGrey3, CV_16S, 0, 1, 3, 1, 0, BORDER_DEFAULT );
+		convertScaleAbs( *state.pMatGrey3, *state.pMatGrey5 );
 
+		addWeighted( *state.pMatGrey4, 0.5, *state.pMatGrey5, 0.5, 0, *state.pMatGrey6 );
+
+		for( int i = 0; i < state.pMatGrey6->rows; ++i) {
+			for( int j = 0; j < state.pMatGrey6->cols; ++j ) {
+				state.pMatGrey6->at<uchar>(i,j) = 255 - state.pMatGrey6->at<uchar>(i,j);
+			}
+		}
 
 		//TODO: seems pMatRGBA can be deleted.
 
@@ -101,9 +124,12 @@ JNIEXPORT void JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_Nati
 		//LOGI("ProcessFrame 4");
 
 		Mat tmp(state.height, state.width, CV_8UC4, pixels);
-		cvtColor(*state.pMatGrey, tmp, CV_GRAY2RGBA, 4);
+		cvtColor(*state.pMatGrey6, tmp, CV_GRAY2RGBA, 4);
 		//state.pMatRGBA->copyTo(tmp);
 		//LOGI("ProcessFrame 5");
+
+
+
 
 		AndroidBitmap_unlockPixels(env, bitmap);
 	} catch (...) {
