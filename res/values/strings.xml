@@ -3,5 +3,7 @@
 
     <string name="hello">Hello World, CameraXActivity!</string>
     <string name="app_name">CameraX</string>
+    <string name="label_next">next</string>
+    <string name="label_prev">prev</string>
 
 </resources>

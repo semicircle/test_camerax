@@ -40,7 +40,8 @@
 					android:textColor="#FFFFFFFF" 
 					android:gravity="left|center_vertical"
 					android:paddingLeft="5dp"
-					android:paddingBottom="10dp"/>
+					android:paddingBottom="10dp"
+					android:text="@string/label_prev"/>
 	
 				<Button
 					android:id="@+id/button2"
@@ -50,7 +51,8 @@
 					android:textColor="#FFFFFFFF"
 					android:gravity="left|center_vertical"
 					android:paddingLeft="5dp"
-					android:paddingBottom="10dp"/>
+					android:paddingBottom="10dp"
+					android:text="@string/label_next"/>
 				
 			</LinearLayout>
 			

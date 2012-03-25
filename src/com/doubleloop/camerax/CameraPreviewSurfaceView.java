@@ -2,19 +2,16 @@ package com.doubleloop.camerax;
 
 import java.util.List;
 
-import org.opencv.android.Utils;
-import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.highgui.Highgui;
 import org.opencv.highgui.VideoCapture;
-import org.opencv.imgproc.Imgproc;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.util.Log;
 import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 
 public class CameraPreviewSurfaceView implements SurfaceHolder.Callback, Runnable {
 	private static final String TAG = "CameraPreviewSurfaceView";
@@ -32,7 +29,9 @@ public class CameraPreviewSurfaceView implements SurfaceHolder.Callback, Runnabl
     public int mParameter3 = 50;
     public int mMode = 0;
     
-    public static int SUPPORTED_MODE_NUMBER = 2;
+    private Paint mPaint = new Paint();
+    
+    public static int SUPPORTED_MODE_NUMBER = 4;
 
 
 	public CameraPreviewSurfaceView(SurfaceHolder holder) {
@@ -110,10 +109,17 @@ public class CameraPreviewSurfaceView implements SurfaceHolder.Callback, Runnabl
 	        	NativeProcessFrame(mBitmap, mMode, mParameter1, mParameter2, mParameter3);
                 Canvas canvas = mHolder.lockCanvas();
                 if (canvas != null) {
+                	//canvas.drawText(String.valueOf(mMode), 0, 0, mPaint);
+                	if( 2==mMode ){
+                		canvas.drawColor(Color.BLACK);
+                	}
                     canvas.drawBitmap(mBitmap, mSurfTopSpace, mSurfLeftSpace, null);
                     mHolder.unlockCanvasAndPost(canvas);
                 }
+        	} else {
+        		Log.e(TAG, "mBitmap is null");
         	}
+        		
         }
 	}
 	
