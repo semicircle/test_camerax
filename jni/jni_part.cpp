@@ -42,16 +42,13 @@ typedef struct {
 	cv::Mat* pMatGrey4;
 	cv::Mat* pMatGrey5;
 	cv::Mat* pMatGrey6;
+	cv::Mat* pMatGreyFinal;
 	cv::Mat* pMatRGBA;
 	int width;
 	int height;
 } stru_camerax_state;
 
 stru_camerax_state state;
-
-/* ??? */
-//extern int AndroidBitmap_lockPixels(JNIEnv* env, jobject jbitmap, void** addrPtr);
-//extern int AndroidBitmap_unlockPixels(JNIEnv* env, jobject jbitmap);
 
 JNIEXPORT jint JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_NativeInit(JNIEnv* env, jobject thiz, jobject camera, jint width, jint height)
 {
@@ -72,6 +69,7 @@ JNIEXPORT jint JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_Nati
 	state.pMatGrey4 = (cv::Mat*)new Mat();
 	state.pMatGrey5 = (cv::Mat*)new Mat();
 	state.pMatGrey6 = (cv::Mat*)new Mat();
+	state.pMatGreyFinal = (cv::Mat*)new Mat();
 
 
 	state.width = width;
@@ -80,7 +78,9 @@ JNIEXPORT jint JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_Nati
 	return 0;
 }
 
-JNIEXPORT void JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_NativeProcessFrame(JNIEnv* env, jobject thiz, jobject bitmap, jint mode)
+JNIEXPORT void JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_NativeProcessFrame(
+		JNIEnv* env, jobject thiz, jobject bitmap, jint mode,
+		jint parameter1, jint parameter2, jint parameter3)
 {
 	void*              pixels = 0;
 
@@ -90,48 +90,59 @@ JNIEXPORT void JNICALL Java_com_doubleloop_camerax_CameraPreviewSurfaceView_Nati
 	 * 4. cvt to bitmap.
 	 */
 	try {
-		//LOGI("ProcessFrame 1, pCapture: %u", (unsigned int)state.pCapture);
-		state.pCapture->grab();
-		//LOGI("ProcessFrame 1.5");
-		state.pCapture->retrieve(*state.pMatGrey, CV_CAP_ANDROID_GREY_FRAME);
-		//LOGI("ProcessFrame 2");
-		//threshold(*state.pMatGrey, *state.pMatGrey2, 0, 0, 1);
-		//cvtColor(*state.pMatGrey2, *state.pMatRGBA, CV_GRAY2RGBA, 4);
-		//cvtColor(*state.pMatGrey, *state.pMatRGBA, CV_GRAY2RGBA, 4);
-		//LOGI("ProcessFrame 3");
-		//blur(*state.pMatGrey, *state.pMatGrey2, Size(3,3));
-#if 0
-		Canny(*state.pMatGrey, *state.pMatGrey, 80, 100, 3);
-#endif
-		//GaussianBlur( *state.pMatGrey, *state.pMatGrey, Size(3,3), 0, 0, BORDER_DEFAULT );
-		Sobel( *state.pMatGrey, *state.pMatGrey2, CV_16S, 1, 0, 3, 1, 0, BORDER_DEFAULT );
-		convertScaleAbs( *state.pMatGrey2, *state.pMatGrey4 );
-		Sobel( *state.pMatGrey, *state.pMatGrey3, CV_16S, 0, 1, 3, 1, 0, BORDER_DEFAULT );
-		convertScaleAbs( *state.pMatGrey3, *state.pMatGrey5 );
 
-		addWeighted( *state.pMatGrey4, 0.5, *state.pMatGrey5, 0.5, 0, *state.pMatGrey6 );
+		switch (mode) {
+		case 0:
+			//LOGI("ProcessFrame 1, pCapture: %u", (unsigned int)state.pCapture);
+			state.pCapture->grab();
+			//LOGI("ProcessFrame 1.5");
+			state.pCapture->retrieve(*state.pMatGrey, CV_CAP_ANDROID_GREY_FRAME);
+			//LOGI("ProcessFrame 2");
+			Sobel( *state.pMatGrey, *state.pMatGrey2, CV_16S, 1, 0, 3, 1, 0, BORDER_DEFAULT );
+			convertScaleAbs( *state.pMatGrey2, *state.pMatGrey4 );
+			Sobel( *state.pMatGrey, *state.pMatGrey3, CV_16S, 0, 1, 3, 1, 0, BORDER_DEFAULT );
+			convertScaleAbs( *state.pMatGrey3, *state.pMatGrey5 );
 
-		for( int i = 0; i < state.pMatGrey6->rows; ++i) {
-			for( int j = 0; j < state.pMatGrey6->cols; ++j ) {
-				state.pMatGrey6->at<uchar>(i,j) = 255 - state.pMatGrey6->at<uchar>(i,j);
+			addWeighted( *state.pMatGrey4, 0.5, *state.pMatGrey5, 0.5, 0, *state.pMatGreyFinal );
+
+			for( int i = 0; i < state.pMatGreyFinal->rows; ++i) {
+				for( int j = 0; j < state.pMatGreyFinal->cols; ++j ) {
+					state.pMatGreyFinal->at<uchar>(i,j) = 205 - state.pMatGreyFinal->at<uchar>(i,j);
+				}
 			}
-		}
+			break;
+		case 1:
+			//LOGI("ProcessFrame 1, pCapture: %u", (unsigned int)state.pCapture);
+			state.pCapture->grab();
+			//LOGI("ProcessFrame 1.5");
+			state.pCapture->retrieve(*state.pMatGrey, CV_CAP_ANDROID_GREY_FRAME);
+			//LOGI("ProcessFrame 2");
+			Sobel( *state.pMatGrey, *state.pMatGrey2, CV_16S, 1, 0, 3, 1, 0, BORDER_DEFAULT );
+			convertScaleAbs( *state.pMatGrey2, *state.pMatGrey4 );
+			Sobel( *state.pMatGrey, *state.pMatGrey3, CV_16S, 0, 1, 3, 1, 0, BORDER_DEFAULT );
+			convertScaleAbs( *state.pMatGrey3, *state.pMatGrey5 );
 
-		//TODO: seems pMatRGBA can be deleted.
+			addWeighted( *state.pMatGrey4, 0.5, *state.pMatGrey5, 0.5, 0, *state.pMatGrey6 );
+
+			for( int i = 0; i < state.pMatGrey6->rows; ++i) {
+				for( int j = 0; j < state.pMatGrey6->cols; ++j ) {
+					state.pMatGrey6->at<uchar>(i,j) = 255 - (state.pMatGrey6->at<uchar>(i,j));
+				}
+			}
+
+			addWeighted( *state.pMatGrey6, 0.7, *state.pMatGrey, 0.3, 0, *state.pMatGreyFinal );
+			break;
+		}
 
 		CV_Assert( AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 );
 		CV_Assert( pixels );
 		//LOGI("ProcessFrame 4");
 
 		Mat tmp(state.height, state.width, CV_8UC4, pixels);
-		cvtColor(*state.pMatGrey6, tmp, CV_GRAY2RGBA, 4);
-		//state.pMatRGBA->copyTo(tmp);
-		//LOGI("ProcessFrame 5");
-
-
-
+		cvtColor(*state.pMatGreyFinal, tmp, CV_GRAY2RGBA, 4);
 
 		AndroidBitmap_unlockPixels(env, bitmap);
+
 	} catch (...) {
 		AndroidBitmap_unlockPixels(env, bitmap);
 		jclass je = env->FindClass("com/doubleloop/camerax/CameraPreviewSurfaceView");
