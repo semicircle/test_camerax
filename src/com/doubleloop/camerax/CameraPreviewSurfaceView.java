@@ -31,7 +31,7 @@ public class CameraPreviewSurfaceView implements SurfaceHolder.Callback, Runnabl
     
     private Paint mPaint = new Paint();
     
-    public static int SUPPORTED_MODE_NUMBER = 4;
+    public static int SUPPORTED_MODE_NUMBER = 5;
 
 
 	public CameraPreviewSurfaceView(SurfaceHolder holder) {

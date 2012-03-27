@@ -189,9 +189,37 @@ extern "C" {
 
 					break;
 				}
+			case 4:
+				{
+					// Canny with color
+					//LOGI("ProcessFrame 1, pCapture: %u", (unsigned int)state.pCapture);
+					state.pCapture->grab();
+					//LOGI("ProcessFrame 1.5");
+					state.pCapture->retrieve(*state.pMatImage, CV_CAP_ANDROID_COLOR_FRAME_BGRA);
+					//state.pCapture->retrieve(*state.pMatImageGrey, CV_CAP_ANDROID_GREY_FRAME);
+					cvtColor(*state.pMatImage, *state.pMatImageGrey, CV_BGRA2GRAY);
+					//blur(*state.pMatImageGrey, *state.pMatGreyEdge, Size(3,3));
+
+
+
+					double edgeThresh = (double)parameter1;
+					Canny(*state.pMatImageGrey, *state.pMatImageGrey, edgeThresh, edgeThresh*2, 3);
+
+					int erosion_size = parameter2 / 10;
+					Mat element = getStructuringElement( MORPH_ELLIPSE,
+															Size( 2*erosion_size + 1, 2*erosion_size+1 ),
+															Point( erosion_size, erosion_size ) );
+
+					erode( *state.pMatImageGrey, *state.pMatGreyEdge, element );
+
+					*state.pMatColorEdge = Scalar::all(0);
+					state.pMatImage->copyTo(*state.pMatColorEdge, *state.pMatGreyEdge);
+
+					break;
+				}
 			}
 
-			if( 2 == mode || 3 == mode ) {
+			if( 2 == mode || 3 == mode || 4 == mode ) {
 				CV_Assert( AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 );
 				CV_Assert( pixels );
 				//LOGI("ProcessFrame 4");
