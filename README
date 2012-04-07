@@ -1,4 +1,4 @@
-how to build:
+How to build:
 1. Android ndk installed.
 2. OpenCV 2.3.1 for Android Library built.
 3. create a file named includeOpenCV.mk with OPENCV_MK_PATH set.
